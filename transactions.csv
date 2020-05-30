@@ -1,0 +1,10 @@
+Amount,Type,Account
+10,Deposit,Checking
+3,Deposit,Checking
+5,Withdraw,Checking
+300,Deposit,Savings
+42,Withdraw,Savings
+44,Withdraw,Savings
+2,Withdraw,Checking
+2000,Deposit,Checking
+44,Deposit,Savings

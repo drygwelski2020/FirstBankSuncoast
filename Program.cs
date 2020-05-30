@@ -79,15 +79,15 @@ using System.Globalization;
 
 namespace FirstBankSuncoast
 {
+
+    class Transaction
+    {
+        public int Amount { get; set; }
+        public string Type { get; set; } // Deposit or Withdrawl
+        public string Account { get; set; } // Checking or savings
+    }
     class Program
     {
-        // Create the Account class
-        class Account
-        {
-            public string Type { get; set; }
-            public double Balance { get; set; }
-        }
-
         // Create the menu to display to the user
         public static void Menu()
         {
@@ -96,151 +96,47 @@ namespace FirstBankSuncoast
             Console.WriteLine("  Welcome to First Bank of Suncoast           ");
             Console.WriteLine("----------------------------------------------");
             Console.WriteLine("Checking Account:                             ");
-            Console.WriteLine("(S)how checking account balance               ");
             Console.WriteLine("(D)eposit funds to checking account           ");
             Console.WriteLine("(W)ithdraw funds from checking account        ");
-            Console.WriteLine("");
-            Console.WriteLine("Saving Account:                               ");
-            Console.WriteLine("(s)how savings account balance                ");
             Console.WriteLine("(d)eposit funds to savings account            ");
             Console.WriteLine("(w)ithdraw funds from savings account         ");
+            Console.WriteLine("(S)how checking account balance               ");
             Console.WriteLine("(Q)uit the application                      ");
             Console.WriteLine("");
-
         }
 
+        static int TransactionsTotal(List<Transaction> transactions, string account, string type)
+        {
+            var total = transactions.
+                Where(transaction => transaction.Account == account && transaction.Type == type).
+                Sum(transaction => transaction.Amount);
+            return total;
+        }
+        private static int CheckingBalance(List<Transaction> transactions)
+        {
+            var checkingDepositSum = TransactionsTotal(transactions, "Checking", "Deposit");
+            var checkingWithdrawSum = TransactionsTotal(transactions, "Checking", "Withdraw");
+            var checkingBalance = checkingDepositSum - checkingWithdrawSum;
+            return checkingBalance;
+        }
+
+        private static int SavingsBalance(List<Transaction> transactions)
+        {
+            var savingsDepositSum = TransactionsTotal(transactions, "Savings", "Deposit");
+            var savingsWithdrawSum = TransactionsTotal(transactions, "Savings", "Withdraw");
+            var savingsBalance = savingsDepositSum - savingsWithdrawSum;
+            return savingsBalance;
+        }
         // Start the program
         static void Main(string[] args)
         {
-            List<Account> account = new List<Account>();
-
-
-            // Write all transactions to a .csv file
-            void SaveAllAccounts()
-            {
-                StreamWriter writer = new StreamWriter("accounts.csv");
-                CsvWriter csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-                csvWriter.WriteRecords(account);
-                writer.Close();
-            }
-
-            // Load file info from .csv file
-            void LoadAllAccounts()
-            {
-                if (File.Exists("accounts.csv"))
-                {
-                    var reader = new StreamReader("accounts.csv");
-                    var csvReader = new CsvReader(reader, CultureInfo.InvariantCulture);
-                    csvReader.Configuration.HasHeaderRecord = true;
-                    account = csvReader.GetRecords<Account>().ToList();
-                    reader.Close();
-                }
-                else
-                {
-                    // Assign a StringReader to read from an empty string
-                    var reader = new StringReader("");
-                }
-            }
-
-            //Create some Account objects
-            var checking = new Account
-            {
-                Type = "Checking",
-            };
-            var savings = new Account
-            {
-                Type = "Savings",
-            };
-
-            account.Add(checking);
-            account.Add(savings);
-
-            Console.WriteLine("");
-            Console.WriteLine($"account has a checking balance of {account[0].Balance} and savings balance of {account[1].Balance}");
-
-            void MakeCheckingDeposit()
-            {
-                Console.Write("How much would you like to deposit?: ");
-                double checkingDepAmt = Double.Parse(Console.ReadLine());
-                if (checkingDepAmt < 0)
-                {
-                    Console.WriteLine("You cannot have a negative deposit amount.");
-                }
-                else
-                {
-                    checking.Balance += checkingDepAmt;
-                    Console.WriteLine($"You're current checking account balance is {checking.Balance}");
-                    SaveAllAccounts();
-                    Console.WriteLine("");
-                }
-            }
-
-            void MakeSavingsDeposit()
-            {
-                Console.Write("How much would you like to deposit?: ");
-                double savingsDepAmt = Double.Parse(Console.ReadLine());
-                if (savingsDepAmt < 0)
-                {
-                    Console.WriteLine("You cannot have a negative deposit amount.");
-                }
-                else
-                {
-                    savings.Balance += savingsDepAmt;
-                    Console.WriteLine($"You're current savings account balance is {savings.Balance}");
-                    SaveAllAccounts();
-                    Console.WriteLine("");
-                }
-            }
-
-            void MakeCheckingWithdrawl()
-            {
-                Console.Write("How much would you like to withdraw?: ");
-                double checkingWithdrawAmt = Double.Parse(Console.ReadLine());
-                if (checkingWithdrawAmt > checking.Balance)
-                {
-                    Console.WriteLine($"You're current balance is {checking.Balance}. You cannot have a negative balance.");
-                }
-                else
-                {
-                    checking.Balance -= checkingWithdrawAmt;
-                    Console.WriteLine($"You're current checking account balance is {checking.Balance}");
-                    //SaveAllAccounts();
-                    Console.WriteLine("");
-                }
-            }
-
-            void MakeSavingsWithdrawl()
-            {
-                Console.Write("How much would you like to withdraw?: ");
-                double savingsWithdrawAmt = Double.Parse(Console.ReadLine());
-                if (savingsWithdrawAmt > savings.Balance)
-                {
-                    Console.WriteLine($"You're current balance is {savings.Balance}. You cannot have a negative balance.");
-                }
-                else
-                {
-                    savings.Balance -= savingsWithdrawAmt;
-                    Console.WriteLine($"You're current savings account balance is {savings.Balance}");
-                    //SaveAllAccounts();
-                    Console.WriteLine("");
-                }
-            }
-            void DisplayCheckingBalance()
-            {
-                Console.WriteLine($"You're current checking account balance is {checking.Balance}");
-                Console.WriteLine("");
-            }
-
-            void DisplaySavingsBalance()
-            {
-                Console.WriteLine($"You're current savings account balance is {savings.Balance}");
-                Console.WriteLine("");
-            }
-
-            LoadAllAccounts();
+            var streamReader = new StreamReader("transactions.csv");
+            var csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
+            var transactions = csvReader.GetRecords<Transaction>().ToList();
+            streamReader.Close();
 
             // Set initial value for the 'choice' variable
-            string choice = "S";
+            string choice = "";
 
             Menu();
 
@@ -258,11 +154,9 @@ namespace FirstBankSuncoast
                     // Display info regarding current checking acct balance
                     case "S":
                         {
-                            Console.WriteLine("");
-
-                            DisplayCheckingBalance();
-
-                            Console.WriteLine("");
+                            int savingsBalance = SavingsBalance(transactions);
+                            var checkingBalance = CheckingBalance(transactions);
+                            Console.WriteLine($"You're checking balance is ${checkingBalance} and savings balance is ${savingsBalance}");
                             break;
                         }
 
@@ -270,71 +164,114 @@ namespace FirstBankSuncoast
                     case "D":
                         {
                             Console.WriteLine("");
-                            Console.WriteLine("You are depositing funds into your checking account:");
 
-                            MakeCheckingDeposit();
+                            Console.Write("Enter deposit amount for checking: ");
+                            var amount = Int32.Parse(Console.ReadLine());
+                            if (amount <= 0)
+                            {
+                                Console.WriteLine("You must enter a number greater than zero.");
+                                break;
+                            }
+                            else
+                            {
+                                var newTransaction = new Transaction { Type = "Deposit", Account = "Checking", Amount = amount };
+                                transactions.Add(newTransaction);
 
-                            Console.WriteLine("");
-                            break;
+                                Console.WriteLine("");
+                                break;
+                            }
                         }
 
                     // Withdraw funds from checking acct and display the current balance
                     case "W":
                         {
                             Console.WriteLine("");
-                            Console.WriteLine("You are withdrawing funds from your checking account:");
 
-                            MakeCheckingWithdrawl();
+                            Console.Write("Enter withdraw amount for checking: ");
+                            var amount = Int32.Parse(Console.ReadLine());
 
+                            //CheckingBalance(transactions);
+                            if (amount > CheckingBalance(transactions))
+                            {
+                                Console.WriteLine("You cannot withdraw more than your current balance.");
+                                break;
+                            }
+                            else if (amount <= 0)
+                            {
+                                Console.WriteLine("You must enter a number greater than zero.");
+                                break;
+                            }
+                            else
+                            {
 
-                            Console.WriteLine("");
-                            break;
-                        }
+                                var newTransaction = new Transaction { Type = "Withdraw", Account = "Checking", Amount = amount };
+                                transactions.Add(newTransaction);
 
-                    // Display info regarding current savings acct balance
-                    case "s":
-                        {
-                            Console.WriteLine("");
-
-                            DisplaySavingsBalance();
-
-                            Console.WriteLine("");
-                            break;
+                                Console.WriteLine("");
+                                break;
+                            }
                         }
 
                     // Deposit funds into savings acct and display the current balance
                     case "d":
                         {
                             Console.WriteLine("");
-                            Console.WriteLine("You are depositing funds into your savings account:");
 
-                            MakeSavingsDeposit();
+                            Console.Write("Enter deposit amount for savings: ");
+                            var amount = Int32.Parse(Console.ReadLine());
+                            if (amount <= 0)
+                            {
+                                Console.WriteLine("You must enter a number greater than zero.");
+                                break;
+                            }
+                            else
+                            {
+                                var newTransaction = new Transaction { Type = "Deposit", Account = "Savings", Amount = amount };
+                                transactions.Add(newTransaction);
 
-                            Console.WriteLine("");
-                            break;
+                                Console.WriteLine("");
+                                break;
+                            }
                         }
 
                     // Withdraw funds from savings acct and display the current balance
                     case "w":
                         {
                             Console.WriteLine("");
-                            Console.WriteLine("You are withdrawing funds from your savings account:");
 
-                            MakeSavingsWithdrawl();
-                            Console.WriteLine("");
-                            break;
+                            Console.Write("Enter withdraw amount for savings: ");
+                            var amount = Int32.Parse(Console.ReadLine());
+                            if (amount > SavingsBalance(transactions))
+                            {
+                                Console.WriteLine("You cannot withdraw more than your current balance.");
+                                break;
+                            }
+                            else if (amount <= 0)
+                            {
+                                Console.WriteLine("You must enter a number greater than zero.");
+                                break;
+                            }
+                            else
+                            {
+                                var newTransaction = new Transaction { Type = "Withdraw", Account = "Savings", Amount = amount };
+                                transactions.Add(newTransaction);
+                                Console.WriteLine("");
+                                break;
+                            }
+
                         }
 
                     // End the program
-
                     case "Q":
                         break;
                 }
-
-                SaveAllAccounts();
-
             }
+
+            var streamWriter = new StreamWriter("transactions.csv");
+            var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
+            csvWriter.WriteRecords(transactions);
+            streamWriter.Close();
+
         }
     }
 }
-
